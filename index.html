@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vadivel project & Sales Tracker</title>
+    <!-- Tailwind CSS for modern, user-friendly styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-amber-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 bg-amber-900/90 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 border border-amber-100">
+            <div class="text-center space-y-2">
+                <div class="inline-flex bg-amber-100 p-4 rounded-full text-amber-800 mb-2">
+                    <i class="fa-solid fa-mug-hot text-4xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-amber-900">Vadivel Billing Portal</h2>
+                <p class="text-xs text-gray-500">Please login with admin credentials to access billing</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Username</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <input type="text" id="login-user" required class="w-full pl-10 pr-3 py-2.5 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm" placeholder="Enter username">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-600 mb-1">Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" id="login-pass" required class="w-full pl-10 pr-3 py-2.5 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm" placeholder="Enter password">
+                    </div>
+                </div>
+
+                <div id="login-error" class="hidden text-xs text-red-600 font-semibold text-center bg-red-50 p-2 rounded-lg border border-red-200">
+                    Invalid username or password! (Use admin / admin)
+                </div>
+
+                <button type="submit" class="w-full bg-amber-700 hover:bg-amber-800 text-white py-3 rounded-xl font-bold transition shadow-md text-sm">
+                    Login to POS
+                </button>
+            </form>
+            <div class="text-center text-xs text-gray-400">
+                Default: Username <span class="font-semibold text-gray-600">admin</span> | Password <span class="font-semibold text-gray-600">admin</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN (Hidden until login) -->
+    <div id="app-screen" class="hidden flex-1 flex flex-col">
+        <!-- Header -->
+        <header class="bg-amber-800 text-white shadow-md py-3 px-4 md:px-6 flex justify-between items-center relative">
+            <div class="flex items-center space-x-2 md:space-x-3">
+                <i class="fa-solid fa-mug-hot text-2xl md:text-3xl text-amber-300"></i>
+                <div>
+                    <h1 class="text-lg md:text-2xl font-bold tracking-wide">vadivel project</h1>
+                    <p class="text-[10px] md:text-xs text-amber-200">Smart POS & Billing</p>
+                </div>
+            </div>
+
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center space-x-2">
+                <button onclick="switchTab('billing')" id="btn-billing" class="bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded-lg font-semibold transition text-sm shadow">
+                    <i class="fa-solid fa-cash-register mr-1"></i> Billing
+                </button>
+                <button onclick="switchTab('reports')" id="btn-reports" class="bg-amber-900 hover:bg-amber-700 px-4 py-2 rounded-lg font-semibold transition text-sm shadow">
+                    <i class="fa-solid fa-chart-line mr-1"></i> Reports
+                </button>
+                <button onclick="switchTab('admin')" id="btn-admin" class="bg-amber-900 hover:bg-amber-700 px-4 py-2 rounded-lg font-semibold transition text-sm shadow">
+                    <i class="fa-solid fa-gear mr-1"></i> Admin Settings
+                </button>
+                <button onclick="logout()" class="bg-red-700 hover:bg-red-800 px-3 py-2 rounded-lg font-semibold transition text-sm shadow ml-2" title="Logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Action & Toggle Buttons -->
+            <div class="flex md:hidden items-center space-x-2">
+                <button onclick="logout()" class="bg-red-700 hover:bg-red-800 px-3 py-2 rounded-lg font-semibold transition text-xs shadow" title="Logout">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+                <button onclick="toggleMobileMenu()" class="bg-amber-700 hover:bg-amber-600 p-2.5 rounded-lg text-white focus:outline-none transition shadow">
+                    <i id="mobile-menu-icon" class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Mobile Dropdown Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-amber-900 text-white px-4 py-3 space-y-2 shadow-inner border-t border-amber-700 z-40">
+            <button onclick="switchTab('billing'); toggleMobileMenu();" id="mobile-btn-billing" class="w-full text-left bg-amber-700 px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center shadow-sm">
+                <i class="fa-solid fa-cash-register mr-2 w-5"></i> Billing
+            </button>
+            <button onclick="switchTab('reports'); toggleMobileMenu();" id="mobile-btn-reports" class="w-full text-left px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center hover:bg-amber-800 transition">
+                <i class="fa-solid fa-chart-line mr-2 w-5"></i> Reports
+            </button>
+            <button onclick="switchTab('admin'); toggleMobileMenu();" id="mobile-btn-admin" class="w-full text-left px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center hover:bg-amber-800 transition">
+                <i class="fa-solid fa-gear mr-2 w-5"></i> Admin Settings
+            </button>
+        </div>
+
+        <!-- Main Container -->
+        <main class="max-w-7xl mx-auto p-3 sm:p-4 md:p-6 flex-1 w-full">
+
+            <!-- BILLING SECTION -->
+            <div id="section-billing" class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                
+                <!-- Menu Grid (Visual Items) -->
+                <div class="lg:col-span-2 order-2 lg:order-1">
+                    <h2 class="text-lg md:text-xl font-bold mb-3 text-amber-900 border-b-2 border-amber-200 pb-2">Select Items</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4" id="menu-grid">
+                        <!-- Menu items injected via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Current Bill / Cart -->
+                <div class="bg-white p-4 md:p-5 rounded-2xl shadow-lg border border-amber-100 flex flex-col justify-between order-1 lg:order-2">
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold mb-3 text-amber-900 border-b-2 border-amber-100 pb-2 flex justify-between items-center">
+                            <span>Current Bill</span>
+                            <button onclick="clearCart()" class="text-xs text-red-500 hover:underline"><i class="fa-solid fa-trash"></i> Clear</button>
+                        </h2>
+                        <div id="cart-items" class="space-y-2.5 max-h-60 sm:max-h-80 overflow-y-auto pr-1">
+                            <p class="text-gray-400 text-center py-6 text-sm">No items added yet.<br>Click items on the left to add.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 md:mt-6 border-t pt-4">
+                        <div class="flex justify-between text-base md:text-lg font-bold mb-3 md:mb-4">
+                            <span>Total Amount:</span>
+                            <span id="cart-total" class="text-amber-800">₹0.00</span>
+                        </div>
+                        <button onclick="openPaymentModal()" id="checkout-btn" disabled class="w-full bg-amber-700 opacity-50 cursor-not-allowed text-white py-3 rounded-xl font-bold transition shadow-md hover:bg-amber-800 text-sm md:text-base">
+                            Proceed to Pay
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORTS SECTION (Monthly & Yearly) -->
+            <div id="section-reports" class="hidden space-y-4 md:space-y-6">
+                <!-- Report Type Switcher -->
+                <div class="flex items-center justify-between flex-wrap gap-3 bg-white p-3 rounded-2xl shadow-sm border border-amber-100">
+                    <div class="flex rounded-xl bg-amber-50 p-1 border border-amber-200 w-full sm:w-72">
+                        <button onclick="switchReportView('monthly')" id="report-tab-monthly" class="flex-1 py-2 rounded-lg font-bold text-xs sm:text-sm bg-amber-700 text-white transition shadow-sm">
+                            Monthly Report
+                        </button>
+                        <button onclick="switchReportView('yearly')" id="report-tab-yearly" class="flex-1 py-2 rounded-lg font-bold text-xs sm:text-sm text-amber-900 transition">
+                            Yearly Report
+                        </button>
+                    </div>
+                    <div id="report-period-label" class="text-xs md:text-sm font-semibold text-amber-900 px-2">
+                        Showing data for current month
+                    </div>
+                </div>
+
+                <!-- Metrics Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md border-l-4 border-amber-600">
+                        <p id="card-label-sales" class="text-xs md:text-sm text-gray-500 font-semibold uppercase">Total Sales This Month</p>
+                        <h3 id="report-total" class="text-2xl md:text-3xl font-bold text-amber-900 mt-2">₹0.00</h3>
+                    </div>
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md border-l-4 border-emerald-600">
+                        <p id="card-label-orders" class="text-xs md:text-sm text-gray-500 font-semibold uppercase">Total Orders This Month</p>
+                        <h3 id="report-orders" class="text-2xl md:text-3xl font-bold text-emerald-800 mt-2">0</h3>
+                    </div>
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md border-l-4 border-blue-600">
+                        <p class="text-xs md:text-sm text-gray-500 font-semibold uppercase">Average Order Value</p>
+                        <h3 id="report-avg" class="text-2xl md:text-3xl font-bold text-blue-800 mt-2">₹0.00</h3>
+                    </div>
+                </div>
+
+                <!-- Transaction History Table -->
+                <div class="bg-white p-4 md:p-6 rounded-2xl shadow-md">
+                    <h3 id="table-title" class="text-lg md:text-xl font-bold text-amber-900 mb-4">Monthly Transaction History</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="bg-amber-100 text-amber-900 text-xs md:text-sm">
+                                    <th class="p-3 rounded-l-lg">Order ID</th>
+                                    <th class="p-3">Date & Time</th>
+                                    <th class="p-3">Items Count</th>
+                                    <th class="p-3">Payment</th>
+                                    <th class="p-3">Total (₹)</th>
+                                    <th class="p-3 rounded-r-lg text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-table-body" class="text-xs md:text-sm divide-y divide-gray-100">
+                                <!-- Transactions injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN SETTINGS SECTION -->
+            <div id="section-admin" class="hidden space-y-4 md:space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                    
+                    <!-- UPI Settings Card -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md space-y-4">
+                        <h3 class="text-lg md:text-xl font-bold text-amber-900 border-b pb-2 flex items-center">
+                            <i class="fa-solid fa-qrcode mr-2 text-amber-700"></i> UPI Payment Settings
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs text-gray-600 font-semibold uppercase mb-1">UPI ID (VPA)</label>
+                                <input type="text" id="admin-upi-id" class="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm" placeholder="e.g. teashop@upi">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 font-semibold uppercase mb-1">Merchant / Business Name</label>
+                                <input type="text" id="admin-merchant-name" class="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm" placeholder="e.g. vadivel project">
+                            </div>
+                            <button onclick="saveUpiSettings()" class="w-full bg-amber-700 hover:bg-amber-800 text-white py-2.5 rounded-xl font-semibold transition shadow text-sm">
+                                Save UPI Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add/Modify Menu Item Card -->
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md lg:col-span-2 space-y-4">
+                        <h3 class="text-lg md:text-xl font-bold text-amber-900 border-b pb-2 flex items-center justify-between">
+                            <span id="form-title"><i class="fa-solid fa-utensils mr-2 text-amber-700"></i> Add New Menu Item</span>
+                            <button onclick="resetMenuForm()" id="cancel-edit-btn" class="hidden text-xs text-gray-500 hover:underline font-normal">Cancel Edit</button>
+                        </h3>
+                        <form id="menu-item-form" onsubmit="handleMenuFormSubmit(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <input type="hidden" id="edit-item-id">
+                            <div>
+                                <label class="block text-xs text-gray-600 font-semibold uppercase mb-1">Item Name</label>
+                                <input type="text" id="item-name-input" required class="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm" placeholder="e.g. Special Elaichi Chai">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 font-semibold uppercase mb-1">Price (₹)</label>
+                                <input type="number" id="item-price-input" required min="1" class="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm" placeholder="e.g. 20">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs text-gray-600 font-semibold uppercase mb-1">Image URL</label>
+                                <input type="url" id="item-img-input" required class="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm" placeholder="https://images.unsplash.com/...">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <button type="submit" id="menu-submit-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-semibold transition shadow text-sm">
+                                    Add Item to Menu
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+
+                <!-- Existing Menu Items Management Table -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-md">
+                    <h3 class="text-lg md:text-xl font-bold text-amber-900 mb-4">Manage Menu Items</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[500px]">
+                            <thead>
+                                <tr class="bg-amber-100 text-amber-900 text-xs md:text-sm">
+                                    <th class="p-3 rounded-l-lg">Image</th>
+                                    <th class="p-3">Item Name</th>
+                                    <th class="p-3">Price</th>
+                                    <th class="p-3 rounded-r-lg text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-menu-table-body" class="text-xs md:text-sm divide-y divide-gray-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- PAYMENT MODAL (UPI & Cash with Change Tracker) -->
+    <div id="payment-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 md:p-6 text-center shadow-2xl space-y-4">
+            <h3 class="text-xl md:text-2xl font-bold text-amber-900">Complete Payment</h3>
+            
+            <!-- Payment Mode Selector Tabs -->
+            <div class="flex rounded-xl bg-amber-50 p-1 border border-amber-200">
+                <button onclick="switchPaymentMode('upi')" id="modal-tab-upi" class="flex-1 py-2 rounded-lg font-bold text-sm bg-amber-700 text-white transition shadow-sm">
+                    <i class="fa-solid fa-qrcode mr-1"></i> UPI QR
+                </button>
+                <button onclick="switchPaymentMode('cash')" id="modal-tab-cash" class="flex-1 py-2 rounded-lg font-bold text-sm text-amber-900 transition">
+                    <i class="fa-solid fa-money-bill-wave mr-1"></i> Cash
+                </button>
+            </div>
+
+            <!-- UPI Content -->
+            <div id="payment-content-upi" class="space-y-3">
+                <p id="upi-display-label" class="text-xs text-gray-500">Scan using any UPI app</p>
+                <div class="bg-amber-50 p-3 rounded-2xl inline-block border border-amber-200">
+                    <img id="qr-code-img" src="" alt="Payment QR Code" class="w-36 h-36 sm:w-40 sm:h-40 mx-auto rounded-lg shadow">
+                    <p id="modal-amount-upi" class="text-base font-bold text-amber-900 mt-2">₹0.00</p>
+                </div>
+                <button onclick="completePayment('UPI')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition shadow text-sm">
+                    Confirm UPI Payment
+                </button>
+            </div>
+
+            <!-- Cash Content with Balance/Change Calculator -->
+            <div id="payment-content-cash" class="space-y-3 hidden text-left">
+                <p class="text-xs text-gray-500 text-center">Enter cash given by customer to calculate change</p>
+                <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200 space-y-3">
+                    <div class="flex justify-between items-center text-sm font-semibold text-gray-700">
+                        <span>Total Bill:</span>
+                        <span id="modal-amount-cash" class="text-amber-900 font-bold">₹0.00</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 uppercase font-semibold mb-1">Cash Given by Customer</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 font-bold">₹</span>
+                            <input type="number" id="cash-given-input" oninput="calculateCashChange()" class="w-full pl-8 pr-3 py-2 bg-white border border-amber-300 rounded-xl font-bold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-lg" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-amber-200">
+                        <span class="text-xs font-semibold uppercase text-gray-600">Change to Return:</span>
+                        <span id="cash-change-output" class="text-xl font-extrabold text-emerald-700">₹0.00</span>
+                    </div>
+                </div>
+                <button onclick="completePayment('Cash')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold transition shadow text-sm">
+                    Confirm Cash Received
+                </button>
+            </div>
+
+            <div class="pt-1">
+                <button onclick="closePaymentModal()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold transition text-sm">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT TRANSACTION MODAL -->
+    <div id="edit-transaction-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-5 md:p-6 shadow-2xl space-y-4">
+            <h3 class="text-xl font-bold text-amber-900 border-b pb-2">Edit Bill / Transaction</h3>
+            <form id="edit-transaction-form" onsubmit="handleEditTransactionSubmit(event)" class="space-y-3">
+                <input type="hidden" id="edit-txn-id">
+                <div>
+                    <label class="block text-xs text-gray-600 font-semibold uppercase mb-1">Order ID</label>
+                    <input type="text" id="edit-txn-id-display" disabled class="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-xl font-medium text-gray-600 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 font-semibold uppercase mb-1">Total Amount (₹)</label>
+                    <input type="number" id="edit-txn-total" required step="0.01" min="1" class="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 font-semibold uppercase mb-1">Payment Method</label>
+                    <select id="edit-txn-method" class="w-full px-3 py-2 bg-amber-50/50 border border-amber-200 rounded-xl font-medium text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+                        <option value="UPI">UPI</option>
+                        <option value="Cash">Cash</option>
+                    </select>
+                </div>
+                <div class="pt-2 flex space-x-2">
+                    <button type="submit" class="flex-1 bg-amber-700 hover:bg-amber-800 text-white py-2.5 rounded-xl font-semibold transition text-sm shadow">
+                        Save Changes
+                    </button>
+                    <button type="button" onclick="closeEditTransactionModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold transition text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Default Menu Data
+        const defaultMenuItems = [
+            { id: 1, name: "Masala Chai", price: 15, img: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=300&q=80" },
+            { id: 2, name: "Ginger Tea", price: 15, img: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=300&q=80" },
+            { id: 3, name: "Green Tea", price: 20, img: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?auto=format&fit=crop&w=300&q=80" },
+            { id: 4, name: "Filter Coffee", price: 20, img: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=300&q=80" },
+            { id: 5, name: "Samosa", price: 15, img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=300&q=80" },
+            { id: 6, name: "Bun Maska", price: 25, img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=300&q=80" },
+            { id: 7, name: "Biscuits (Pack)", price: 10, img: "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?auto=format&fit=crop&w=300&q=80" },
+            { id: 8, name: "Maggi", price: 30, img: "https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=300&q=80" }
+        ];
+
+        let menuItems = JSON.parse(localStorage.getItem('tea_shop_menu')) || defaultMenuItems;
+        let cart = [];
+        let currentReportViewMode = 'monthly'; // 'monthly' or 'yearly'
+
+        // Initialize application & Authentication check
+        window.onload = function() {
+            if (sessionStorage.getItem('isLoggedIn') === 'true') {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-screen').classList.add('hidden');
+            }
+
+            renderMenu();
+            renderCart();
+            loadSalesData();
+            loadAdminSettings();
+        };
+
+        // Mobile Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const icon = document.getElementById('mobile-menu-icon');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                icon.className = "fa-solid fa-xmark text-lg";
+            } else {
+                menu.classList.add('hidden');
+                icon.className = "fa-solid fa-bars text-lg";
+            }
+        }
+
+        // Login Handler
+        function handleLogin(event) {
+            event.preventDefault();
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            const errorMsg = document.getElementById('login-error');
+
+            if (user === 'admin' && pass === 'admin') {
+                sessionStorage.setItem('isLoggedIn', 'true');
+                document.getElementById('login-error').classList.add('hidden');
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        // Logout Handler
+        function logout() {
+            sessionStorage.removeItem('isLoggedIn');
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('login-form').reset();
+            document.getElementById('login-error').classList.add('hidden');
+        }
+
+        // Render visual menu items
+        function renderMenu() {
+            const grid = document.getElementById('menu-grid');
+            if (menuItems.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-8 text-gray-400">No menu items found. Go to Admin Settings to add items.</div>`;
+                return;
+            }
+            grid.innerHTML = menuItems.map(item => `
+                <div onclick="addToCart(${item.id})" class="bg-white rounded-2xl p-2.5 sm:p-3 shadow-md hover:shadow-xl cursor-pointer transition transform hover:-translate-y-1 border border-amber-100 flex flex-col items-center text-center">
+                    <img src="${item.img}" alt="${item.name}" class="w-full h-24 sm:h-28 object-cover rounded-xl mb-2" onerror="this.src='https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=300&q=80'">
+                    <h3 class="font-bold text-amber-900 text-xs sm:text-sm mb-1 line-clamp-1">${item.name}</h3>
+                    <span class="text-amber-700 font-extrabold text-sm sm:text-base">₹${item.price}</span>
+                </div>
+            `).join('');
+        }
+
+        // Cart management
+        function addToCart(id) {
+            const item = menuItems.find(p => p.id === id);
+            if (!item) return;
+            const existing = cart.find(p => p.id === id);
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ ...item, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function updateQty(id, change) {
+            const item = cart.find(p => p.id === id);
+            if (item) {
+                item.qty += change;
+                if (item.qty <= 0) {
+                    cart = cart.filter(p => p.id !== id);
+                }
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            const checkoutBtn = document.getElementById('checkout-btn');
+            
+            if (cart.length === 0) {
+                container.innerHTML = `<p class="text-gray-400 text-center py-6 text-sm">No items added yet.<br>Click items on the left to add.</p>`;
+                checkoutBtn.disabled = true;
+                checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                document.getElementById('cart-total').innerText = '₹0.00';
+                return;
+            }
+
+            checkoutBtn.disabled = false;
+            checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            let total = 0;
+            container.innerHTML = cart.map(item => {
+                total += item.price * item.qty;
+                return `
+                    <div class="flex justify-between items-center bg-amber-50/50 p-2.5 rounded-xl border border-amber-100">
+                        <div class="pr-2">
+                            <h4 class="font-bold text-xs sm:text-sm text-gray-800 line-clamp-1">${item.name}</h4>
+                            <span class="text-[11px] text-amber-700">₹${item.price} × ${item.qty}</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5 shrink-0">
+                            <button onclick="updateQty(${item.id}, -1)" class="w-6 h-6 sm:w-7 sm:h-7 bg-white border border-amber-200 rounded-lg text-amber-900 font-bold hover:bg-amber-100 flex items-center justify-center text-xs">-</button>
+                            <span class="font-bold text-xs sm:text-sm w-5 text-center">${item.qty}</span>
+                            <button onclick="updateQty(${item.id}, 1)" class="w-6 h-6 sm:w-7 sm:h-7 bg-white border border-amber-200 rounded-lg text-amber-900 font-bold hover:bg-amber-100 flex items-center justify-center text-xs">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('cart-total').innerText = `₹${total.toFixed(2)}`;
+        }
+
+        // Payment Modal & Method Switching
+        function openPaymentModal() {
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            document.getElementById('modal-amount-upi').innerText = `Total: ₹${total.toFixed(2)}`;
+            document.getElementById('modal-amount-cash').innerText = `₹${total.toFixed(2)}`;
+            
+            document.getElementById('cash-given-input').value = '';
+            document.getElementById('cash-change-output').innerText = '₹0.00';
+            document.getElementById('cash-change-output').className = "text-xl font-extrabold text-emerald-700";
+
+            const upiConfig = JSON.parse(localStorage.getItem('tea_shop_upi_config')) || { id: 'teashop@upi', name: 'ChaiTapri' };
+            document.getElementById('upi-display-label').innerText = `Scan to pay via ${upiConfig.name} (${upiConfig.id})`;
+
+            const upiString = `upi://pay?pa=${encodeURIComponent(upiConfig.id)}&pn=${encodeURIComponent(upiConfig.name)}&am=${total}&cu=INR`;
+            document.getElementById('qr-code-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(upiString)}`;
+            
+            switchPaymentMode('upi');
+            document.getElementById('payment-modal').classList.remove('hidden');
+        }
+
+        function switchPaymentMode(mode) {
+            const tabUpi = document.getElementById('modal-tab-upi');
+            const tabCash = document.getElementById('modal-tab-cash');
+            const contentUpi = document.getElementById('payment-content-upi');
+            const contentCash = document.getElementById('payment-content-cash');
+
+            if (mode === 'upi') {
+                tabUpi.className = "flex-1 py-2 rounded-lg font-bold text-sm bg-amber-700 text-white transition shadow-sm";
+                tabCash.className = "flex-1 py-2 rounded-lg font-bold text-sm text-amber-900 transition";
+                contentUpi.classList.remove('hidden');
+                contentCash.classList.add('hidden');
+            } else {
+                tabCash.className = "flex-1 py-2 rounded-lg font-bold text-sm bg-amber-700 text-white transition shadow-sm";
+                tabUpi.className = "flex-1 py-2 rounded-lg font-bold text-sm text-amber-900 transition";
+                contentCash.classList.remove('hidden');
+                contentUpi.classList.add('hidden');
+                document.getElementById('cash-given-input').focus();
+            }
+        }
+
+        function calculateCashChange() {
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const cashGiven = parseFloat(document.getElementById('cash-given-input').value) || 0;
+            const change = cashGiven - total;
+            const changeOutput = document.getElementById('cash-change-output');
+
+            if (cashGiven === 0) {
+                changeOutput.innerText = `₹0.00`;
+                changeOutput.className = "text-xl font-extrabold text-emerald-700";
+            } else if (change >= 0) {
+                changeOutput.innerText = `₹${change.toFixed(2)}`;
+                changeOutput.className = "text-xl font-extrabold text-emerald-700";
+            } else {
+                changeOutput.innerText = `Short by ₹${Math.abs(change).toFixed(2)}`;
+                changeOutput.className = "text-base font-extrabold text-red-600";
+            }
+        }
+
+        function closePaymentModal() {
+            document.getElementById('payment-modal').classList.add('hidden');
+        }
+
+        function completePayment(method) {
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const totalItemsCount = cart.reduce((sum, item) => sum + item.qty, 0);
+            
+            if (method === 'Cash') {
+                const cashGiven = parseFloat(document.getElementById('cash-given-input').value) || 0;
+                if (cashGiven < total) {
+                    alert('Cash given is less than the total bill amount!');
+                    return;
+                }
+            }
+
+            const transaction = {
+                id: 'CHAI-' + Math.floor(1000 + Math.random() * 9000),
+                date: new Date().toLocaleString(),
+                timestamp: new Date().getTime(),
+                itemsCount: totalItemsCount,
+                paymentMethod: method,
+                total: total
+            };
+
+            let sales = JSON.parse(localStorage.getItem('tea_shop_sales')) || [];
+            sales.push(transaction);
+            localStorage.setItem('tea_shop_sales', JSON.stringify(sales));
+
+            alert(`Payment (${method}) Successful! Bill recorded.`);
+            closePaymentModal();
+            clearCart();
+            loadSalesData();
+        }
+
+        // Admin Settings & Menu Management Logic
+        function loadAdminSettings() {
+            const upiConfig = JSON.parse(localStorage.getItem('tea_shop_upi_config')) || { id: 'teashop@upi', name: 'ChaiTapri' };
+            document.getElementById('admin-upi-id').value = upiConfig.id;
+            document.getElementById('admin-merchant-name').value = upiConfig.name;
+            renderAdminMenuTable();
+        }
+
+        function saveUpiSettings() {
+            const id = document.getElementById('admin-upi-id').value.trim();
+            const name = document.getElementById('admin-merchant-name').value.trim();
+            if (!id || !name) {
+                alert('Please enter both UPI ID and Merchant Name.');
+                return;
+            }
+            const upiConfig = { id, name };
+            localStorage.setItem('tea_shop_upi_config', JSON.stringify(upiConfig));
+            alert('UPI settings updated successfully!');
+        }
+
+        function renderAdminMenuTable() {
+            const tbody = document.getElementById('admin-menu-table-body');
+            if (menuItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-400">No menu items found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = menuItems.map(item => `
+                <tr class="hover:bg-amber-50/50">
+                    <td class="p-3">
+                        <img src="${item.img}" alt="${item.name}" class="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded-lg border" onerror="this.src='https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=300&q=80'">
+                    </td>
+                    <td class="p-3 font-semibold text-amber-900">${item.name}</td>
+                    <td class="p-3 font-bold text-emerald-700">₹${item.price}</td>
+                    <td class="p-3 text-right space-x-1 sm:space-x-2">
+                        <button onclick="editMenuItem(${item.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition">Edit</button>
+                        <button onclick="deleteMenuItem(${item.id})" class="bg-red-100 hover:bg-red-200 text-red-700 px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function handleMenuFormSubmit(event) {
+            event.preventDefault();
+            const editId = document.getElementById('edit-item-id').value;
+            const name = document.getElementById('item-name-input').value.trim();
+            const price = parseFloat(document.getElementById('item-price-input').value);
+            const img = document.getElementById('item-img-input').value.trim();
+
+            if (editId) {
+                const item = menuItems.find(p => p.id == editId);
+                if (item) {
+                    item.name = name;
+                    item.price = price;
+                    item.img = img;
+                }
+                alert('Menu item updated successfully!');
+            } else {
+                const newId = menuItems.length > 0 ? Math.max(...menuItems.map(p => p.id)) + 1 : 1;
+                menuItems.push({ id: newId, name, price, img });
+                alert('New menu item added successfully!');
+            }
+
+            localStorage.setItem('tea_shop_menu', JSON.stringify(menuItems));
+            resetMenuForm();
+            renderMenu();
+            renderAdminMenuTable();
+        }
+
+        function editMenuItem(id) {
+            const item = menuItems.find(p => p.id === id);
+            if (!item) return;
+
+            document.getElementById('edit-item-id').value = item.id;
+            document.getElementById('item-name-input').value = item.name;
+            document.getElementById('item-price-input').value = item.price;
+            document.getElementById('item-img-input').value = item.img;
+
+            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-pen-to-square mr-2 text-amber-700"></i> Modify Menu Item`;
+            document.getElementById('menu-submit-btn').innerText = `Update Menu Item`;
+            document.getElementById('menu-submit-btn').className = `w-full bg-amber-700 hover:bg-amber-800 text-white py-2.5 rounded-xl font-semibold transition shadow text-sm`;
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+            document.getElementById('menu-item-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetMenuForm() {
+            document.getElementById('menu-item-form').reset();
+            document.getElementById('edit-item-id').value = '';
+            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-utensils mr-2 text-amber-700"></i> Add New Menu Item`;
+            document.getElementById('menu-submit-btn').innerText = `Add Item to Menu`;
+            document.getElementById('menu-submit-btn').className = `w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-semibold transition shadow text-sm`;
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+        }
+
+        function deleteMenuItem(id) {
+            if (confirm('Are you sure you want to delete this menu item?')) {
+                menuItems = menuItems.filter(p => p.id !== id);
+                localStorage.setItem('tea_shop_menu', JSON.stringify(menuItems));
+                renderMenu();
+                renderAdminMenuTable();
+            }
+        }
+
+        // Reports & Dashboard (Monthly & Yearly Support + Edit/Delete Bills)
+        function switchReportView(mode) {
+            currentReportViewMode = mode;
+            const tabMonthly = document.getElementById('report-tab-monthly');
+            const tabYearly = document.getElementById('report-tab-yearly');
+
+            if (mode === 'monthly') {
+                tabMonthly.className = "flex-1 py-2 rounded-lg font-bold text-xs sm:text-sm bg-amber-700 text-white transition shadow-sm";
+                tabYearly.className = "flex-1 py-2 rounded-lg font-bold text-xs sm:text-sm text-amber-900 transition";
+            } else {
+                tabYearly.className = "flex-1 py-2 rounded-lg font-bold text-xs sm:text-sm bg-amber-700 text-white transition shadow-sm";
+                tabMonthly.className = "flex-1 py-2 rounded-lg font-bold text-xs sm:text-sm text-amber-900 transition";
+            }
+            loadSalesData();
+        }
+
+        function loadSalesData() {
+            const sales = JSON.parse(localStorage.getItem('tea_shop_sales')) || [];
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            let filteredSales = [];
+            if (currentReportViewMode === 'monthly') {
+                filteredSales = sales.filter(txn => {
+                    const txnDate = new Date(txn.timestamp);
+                    return txnDate.getMonth() === currentMonth && txnDate.getFullYear() === currentYear;
+                });
+                document.getElementById('card-label-sales').innerText = "Total Sales This Month";
+                document.getElementById('card-label-orders').innerText = "Total Orders This Month";
+                document.getElementById('table-title').innerText = "Monthly Transaction History";
+                document.getElementById('report-period-label').innerText = `Showing data for ${now.toLocaleString('default', { month: 'long' })} ${currentYear}`;
+            } else {
+                filteredSales = sales.filter(txn => {
+                    const txnDate = new Date(txn.timestamp);
+                    return txnDate.getFullYear() === currentYear;
+                });
+                document.getElementById('card-label-sales').innerText = "Total Sales This Year";
+                document.getElementById('card-label-orders').innerText = "Total Orders This Year";
+                document.getElementById('table-title').innerText = `Yearly Transaction History (${currentYear})`;
+                document.getElementById('report-period-label').innerText = `Showing data for the year ${currentYear}`;
+            }
+
+            const totalRevenue = filteredSales.reduce((sum, txn) => sum + txn.total, 0);
+            const totalOrders = filteredSales.length;
+            const avgOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+            document.getElementById('report-total').innerText = `₹${totalRevenue.toFixed(2)}`;
+            document.getElementById('report-orders').innerText = totalOrders;
+            document.getElementById('report-avg').innerText = `₹${avgOrder.toFixed(2)}`;
+
+            const tbody = document.getElementById('sales-table-body');
+            if (filteredSales.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-400">No transactions recorded for this ${currentReportViewMode}.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredSales.reverse().map(txn => {
+                const badgeColor = txn.paymentMethod === 'Cash' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800';
+                return `
+                    <tr class="hover:bg-amber-50/50">
+                        <td class="p-3 font-semibold text-amber-900">${txn.id}</td>
+                        <td class="p-3 text-gray-600">${txn.date}</td>
+                        <td class="p-3">${txn.itemsCount} items</td>
+                        <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${badgeColor}">${txn.paymentMethod || 'UPI'}</span></td>
+                        <td class="p-3 font-bold text-emerald-700">₹${txn.total.toFixed(2)}</td>
+                        <td class="p-3 text-right space-x-1 sm:space-x-2">
+                            <button onclick="openEditTransactionModal('${txn.id}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded-lg text-xs font-semibold transition">Edit</button>
+                            <button onclick="deleteTransaction('${txn.id}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-2.5 py-1 rounded-lg text-xs font-semibold transition">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Delete Bill / Transaction
+        function deleteTransaction(id) {
+            if (confirm(`Are you sure you want to delete transaction ${id}?`)) {
+                let sales = JSON.parse(localStorage.getItem('tea_shop_sales')) || [];
+                sales = sales.filter(txn => txn.id !== id);
+                localStorage.setItem('tea_shop_sales', JSON.stringify(sales));
+                loadSalesData();
+            }
+        }
+
+        // Edit Bill / Transaction Modal Handlers
+        function openEditTransactionModal(id) {
+            const sales = JSON.parse(localStorage.getItem('tea_shop_sales')) || [];
+            const txn = sales.find(s => s.id === id);
+            if (!txn) return;
+
+            document.getElementById('edit-txn-id').value = txn.id;
+            document.getElementById('edit-txn-id-display').value = txn.id;
+            document.getElementById('edit-txn-total').value = txn.total;
+            document.getElementById('edit-txn-method').value = txn.paymentMethod || 'UPI';
+
+            document.getElementById('edit-transaction-modal').classList.remove('hidden');
+        }
+
+        function closeEditTransactionModal() {
+            document.getElementById('edit-transaction-modal').classList.add('hidden');
+        }
+
+        function handleEditTransactionSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('edit-txn-id').value;
+            const newTotal = parseFloat(document.getElementById('edit-txn-total').value);
+            const newMethod = document.getElementById('edit-txn-method').value;
+
+            let sales = JSON.parse(localStorage.getItem('tea_shop_sales')) || [];
+            const txn = sales.find(s => s.id === id);
+            if (txn) {
+                txn.total = newTotal;
+                txn.paymentMethod = newMethod;
+                localStorage.setItem('tea_shop_sales', JSON.stringify(sales));
+                alert('Transaction updated successfully!');
+                closeEditTransactionModal();
+                loadSalesData();
+            }
+        }
+
+        // Tab Switching
+        function switchTab(tab) {
+            const billingSec = document.getElementById('section-billing');
+            const reportsSec = document.getElementById('section-reports');
+            const adminSec = document.getElementById('section-admin');
+            const btnBilling = document.getElementById('btn-billing');
+            const btnReports = document.getElementById('btn-reports');
+            const btnAdmin = document.getElementById('btn-admin');
+            const mobileBtnBilling = document.getElementById('mobile-btn-billing');
+            const mobileBtnReports = document.getElementById('mobile-btn-reports');
+            const mobileBtnAdmin = document.getElementById('mobile-btn-admin');
+
+            billingSec.classList.add('hidden');
+            reportsSec.classList.add('hidden');
+            adminSec.classList.add('hidden');
+
+            btnBilling.className = "bg-amber-900 hover:bg-amber-700 px-4 py-2 rounded-lg font-semibold transition text-sm shadow";
+            btnReports.className = "bg-amber-900 hover:bg-amber-700 px-4 py-2 rounded-lg font-semibold transition text-sm shadow";
+            btnAdmin.className = "bg-amber-900 hover:bg-amber-700 px-4 py-2 rounded-lg font-semibold transition text-sm shadow";
+
+            mobileBtnBilling.className = "w-full text-left px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center hover:bg-amber-800 transition";
+            mobileBtnReports.className = "w-full text-left px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center hover:bg-amber-800 transition";
+            mobileBtnAdmin.className = "w-full text-left px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center hover:bg-amber-800 transition";
+
+            if (tab === 'billing') {
+                billingSec.classList.remove('hidden');
+                btnBilling.className = "bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded-lg font-semibold transition text-sm shadow";
+                mobileBtnBilling.className = "w-full text-left bg-amber-700 px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center shadow-sm";
+            } else if (tab === 'reports') {
+                reportsSec.classList.remove('hidden');
+                btnReports.className = "bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded-lg font-semibold transition text-sm shadow";
+                mobileBtnReports.className = "w-full text-left bg-amber-700 px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center shadow-sm";
+                loadSalesData();
+            } else if (tab === 'admin') {
+                adminSec.classList.remove('hidden');
+                btnAdmin.className = "bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded-lg font-semibold transition text-sm shadow";
+                mobileBtnAdmin.className = "w-full text-left bg-amber-700 px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center shadow-sm";
+                loadAdminSettings();
+            }
+        }
+    </script>
+</body>
+</html>
